@@ -16,11 +16,6 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add library="libsfml-graphics-d" />
-					<Add library="libsfml-audio-d" />
-					<Add library="libsfml-network-d" />
-					<Add library="libsfml-window-d" />
-					<Add library="libsfml-system-d" />
 					<Add library="sfml-graphics-d" />
 					<Add library="sfml-audio-d" />
 					<Add library="sfml-network-d" />
@@ -35,14 +30,10 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-std=c++14" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="libsfml-graphics" />
-					<Add library="libsfml-audio" />
-					<Add library="libsfml-network" />
-					<Add library="libsfml-window" />
-					<Add library="libsfml-system" />
 					<Add library="sfml-graphics" />
 					<Add library="sfml-audio" />
 					<Add library="sfml-network" />

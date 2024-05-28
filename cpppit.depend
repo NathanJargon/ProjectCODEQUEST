@@ -1,6 +1,8 @@
 # depslib dependency file v1.0
-1715317645 source:c:\nash\projects folder\cpppit\main.cpp
+1715320352 source:c:\nash\projects folder\cpppit\main.cpp
 	<SFML/Graphics.hpp>
+	<SFML/Config.hpp>
+	<iostream>
 
 1699022364 c:\sfml-2.6.1\include\sfml\graphics.hpp
 	<SFML/Window.hpp>
