@@ -48,9 +48,10 @@ int main() {
     sidebar.setFillColor(sf::Color(50, 50, 50));
 
     std::vector<sf::RectangleShape> buttons;
+
     for (int i = 0; i < 5; i++) {
         sf::RectangleShape button(sf::Vector2f(180, 70));
-        button.setPosition(10, 10 + i * 80); 
+        button.setPosition(10, 50 + i * 80); // Adjust the y-position here
         button.setFillColor(sf::Color::White); 
         buttons.push_back(button);
     }
@@ -78,11 +79,12 @@ int main() {
     sf::Text prevButtonText("Previous", font, 25);
 
     sf::RectangleShape nextButton(sf::Vector2f(180, 70));
-    nextButton.setPosition(10, 10 + 5 * 80);
+    nextButton.setPosition(10, 50 + 5 * 80); // Adjust the y-position here
     nextButton.setFillColor(sf::Color::Green);
     sf::RectangleShape prevButton(sf::Vector2f(180, 70));
-    prevButton.setPosition(10, 10 + 6 * 80);
+    prevButton.setPosition(10, 50 + 6 * 80); // Adjust the y-position here
     prevButton.setFillColor(sf::Color::Red);
+
 
 
     std::vector<sf::Text> buttonLabels;
@@ -96,19 +98,33 @@ int main() {
         buttonLabels.push_back(label);
     }
 
-    std::vector<sf::Text> texts;
+    std::vector<sf::Texture> textures;
+    std::vector<sf::Sprite> images;
+    textures.reserve(12);
+
     for (int i = 0; i < 12; i++) {
         std::ifstream file("texts/text" + std::to_string(i) + ".txt");
-        std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        sf::Text text(str, font, 30);
-        text.setPosition(window.getSize().x / 2, window.getSize().y / 2);
-        texts.push_back(text);
+        std::string imageName;
+        std::getline(file, imageName); // Get the image name from the text file
+        textures.emplace_back();
+        if (!textures.back().loadFromFile("images/" + imageName)) {
+            std::cerr << "Could not load image: " << imageName << std::endl;
+            continue; // Skip this iteration of the loop
+        }
+        sf::Sprite sprite(textures.back());
+        sprite.setOrigin(sprite.getLocalBounds().width / 2, sprite.getLocalBounds().height / 2); 
+        sprite.setPosition(window.getSize().x / 2, window.getSize().y / 2); 
+        sprite.setScale(0.5f, 0.5f);
+        images.push_back(sprite);
     }
 
-    sf::Text currentText = texts[0];
-    int currentPage = 0;
-    int totalPages = (buttonNames.size() + 4) / 5; // Round up
-    
+    sf::Sprite currentImage = images[0];
+
+    size_t currentPage = 0;
+    size_t totalPages = (buttonNames.size() + 4) / 5; // Round up
+
+    size_t currentImageIndex = 0;
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -116,14 +132,17 @@ int main() {
         {
             if (event.type == sf::Event::Closed)
                 window.close(); 
-    
+
             if (event.type == sf::Event::MouseButtonPressed) {
-                for (int i = 0; i < buttons.size(); i++) {
+                for (size_t i = 0; i < buttons.size(); i++) {
                     if (buttons[i].getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
-                        currentText = texts[i + currentPage * 5];
+                        size_t index = currentPage * 5 + i;
+                        if (index < images.size()) {
+                            currentImageIndex = index;
+                        }
                     }
                 }
-    
+                    
                 // Update the current page when the navigation buttons are clicked
                 // and prevent going to a page that doesn't exist
                 if (nextButton.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
@@ -138,7 +157,7 @@ int main() {
                 }
             }
         }
-    
+        
         nextButtonText.setPosition(
             nextButton.getPosition().x + nextButton.getSize().x / 2 - nextButtonText.getLocalBounds().width / 2,
             nextButton.getPosition().y + nextButton.getSize().y / 2 - nextButtonText.getLocalBounds().height / 2
@@ -154,14 +173,14 @@ int main() {
     
         // Only draw the buttons and labels for the current page
         // and prevent drawing buttons or labels that don't exist
-        for (int i = 0; i < buttons.size() && i + currentPage * 5 < buttonNames.size(); i++) {
+        for (size_t i = 0; i < buttons.size() && i + currentPage * 5 < buttonNames.size(); i++) {
             window.draw(buttons[i]);
-    
+
             // Update the position of the labels
             float x = buttons[i].getPosition().x + buttons[i].getSize().x / 2 - buttonLabels[i + currentPage * 5].getLocalBounds().width / 2;
             float y = buttons[i].getPosition().y + buttons[i].getSize().y / 2 - buttonLabels[i + currentPage * 5].getLocalBounds().height / 2;
             buttonLabels[i + currentPage * 5].setPosition(x, y);
-    
+
             window.draw(buttonLabels[i + currentPage * 5]);
         }
     
@@ -171,7 +190,7 @@ int main() {
         window.draw(nextButtonText);
         window.draw(prevButtonText);
 
-        window.draw(currentText);
+        window.draw(images[currentImageIndex]);
         window.draw(title);
         window.display();
     }
