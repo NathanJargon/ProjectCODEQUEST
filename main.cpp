@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <memory>
 #include <sstream>
 
 class TextWrapper {
@@ -16,7 +17,6 @@ public:
 
         while (words >> word) {
             sf::Text line(wordsBuffer + " " + word, font, characterSize);
-            // If bold, apply bold style
             if (bold) {
                 line.setStyle(sf::Text::Bold);
             }
@@ -37,45 +37,44 @@ public:
     }
 };
 
-// fetches images by reading from text files and using the image names to find the images
-void loadImagesFromTextFiles(std::vector<std::vector<sf::Texture>>& textures, std::vector<std::vector<sf::Sprite>>& images, sf::RenderWindow& window) {
+void loadImagesFromTextFilesRecursively(int fileIndex, std::vector<std::vector<std::unique_ptr<sf::Texture>>>& textures, std::vector<std::vector<sf::Sprite>>& images, sf::RenderWindow& window) {
+    if (fileIndex >= 12) return; 
+
     textures.resize(12);
     images.resize(12);
 
-    for (int i = 0; i < 12; ++i) {
-        std::ifstream file("texts/text" + std::to_string(i) + ".txt");
-        if (!file) {
-            std::cerr << "Failed to open file: texts/text" << i << ".txt" << std::endl;
+    std::ifstream file("texts/text" + std::to_string(fileIndex) + ".txt");
+    if (!file) {
+        std::cerr << "Failed to open file: texts/text" << fileIndex << ".txt" << std::endl;
+        loadImagesFromTextFilesRecursively(fileIndex + 1, textures, images, window); 
+        return;
+    }
+
+    std::string imageName;
+    while (std::getline(file, imageName)) {
+        auto texture = std::make_unique<sf::Texture>();
+        if (!texture->loadFromFile("images/" + imageName)) {
+            std::cerr << "Could not load image: " << imageName << std::endl;
             continue;
         }
 
-        std::string imageName;
-        while (std::getline(file, imageName)) {
-            sf::Texture texture;
-            if (!texture.loadFromFile("images/" + imageName)) {
-                std::cerr << "Could not load image: " << imageName << std::endl;
-                continue;
-            }
+        textures[fileIndex].push_back(std::move(texture));
 
-            textures[i].push_back(texture);
-
-            sf::Sprite sprite(textures[i].back());
-            sprite.setOrigin(sprite.getLocalBounds().width / 2, sprite.getLocalBounds().height / 2);
-            sprite.setPosition((window.getSize().x / 2) + 100, window.getSize().y / 2);
-            sprite.setScale(1.00f, 1.00f);
-            images[i].push_back(sprite);
-        }
+        sf::Sprite sprite(*textures[fileIndex].back());
+        sprite.setOrigin(sprite.getLocalBounds().width / 2, sprite.getLocalBounds().height / 2);
+        sprite.setPosition((window.getSize().x / 2) + 100, window.getSize().y / 2);
+        sprite.setScale(1.00f, 1.00f);
+        images[fileIndex].push_back(sprite);
     }
+
+    loadImagesFromTextFilesRecursively(fileIndex + 1, textures, images, window); 
 }
-
-
-
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1280, 720), "CodeQuest");
     sf::Color defaultButtonColor = sf::Color::White;
     sf::Color activeButtonColor = sf::Color::Yellow;
-    sf::Color inactiveButtonColor = sf::Color(128, 128, 128);  // Grey color for inactive buttons
+    sf::Color inactiveButtonColor = sf::Color(128, 128, 128); 
 
     sf::Font font;
     if (!font.loadFromFile("fonts/Montserrat Light.otf")) {
@@ -102,6 +101,11 @@ int main() {
         "Exception Handling", "Recursion"
     };
 
+    sf::Text pageNumberText;
+    pageNumberText.setFont(font); 
+    pageNumberText.setCharacterSize(20);
+    pageNumberText.setFillColor(sf::Color::White); 
+
     sf::Text sidebarTitle("Lessons", font, 40);
     sidebarTitle.setPosition(25, 10);
     sidebarTitle.setFillColor(sf::Color::White);
@@ -117,30 +121,41 @@ int main() {
     prevButton.setPosition(10, 50 + 6 * 90);
     prevButton.setFillColor(sf::Color::Red);
     
-    sf::Text nextImageButtonText("Next Image", font, 25);
-    sf::Text prevImageButtonText("Previous Image", font, 25);
+    sf::Text nextImageButtonText(">", font, 25);
+    sf::Text prevImageButtonText("<", font, 25);
     
-    sf::RectangleShape nextImageButton(sf::Vector2f(250, 70));
-    nextImageButton.setPosition(1000, 50 + 6.5 * 90);
+    sf::RectangleShape nextImageButton(sf::Vector2f(50, 60));
+    nextImageButton.setPosition(1200, 50 + 6.5 * 90);
     nextImageButton.setFillColor(sf::Color::Green); 
     
-    sf::RectangleShape prevImageButton(sf::Vector2f(250, 70));
-    prevImageButton.setPosition(250, 50 + 6.5 * 90); 
+    sf::RectangleShape prevImageButton(sf::Vector2f(50, 60));
+    prevImageButton.setPosition(1100, 50 + 6.5 * 90); 
     prevImageButton.setFillColor(sf::Color::Red); 
+
+    float verticalAdjustment = 20.0f; 
+
+    sf::FloatRect nextImageButtonBounds = nextImageButton.getGlobalBounds();
+    sf::FloatRect nextImageTextBounds = nextImageButtonText.getLocalBounds();
+    nextImageButtonText.setOrigin(nextImageTextBounds.width / 2.0f, nextImageTextBounds.height / 2.0f);
+    nextImageButtonText.setPosition(nextImageButtonBounds.left + nextImageButtonBounds.width / 2.0f, nextImageButtonBounds.top + nextImageButtonBounds.height / 2.0f - verticalAdjustment);
+
+    sf::FloatRect prevImageButtonBounds = prevImageButton.getGlobalBounds();
+    sf::FloatRect prevImageTextBounds = prevImageButtonText.getLocalBounds();
+    prevImageButtonText.setOrigin(prevImageTextBounds.width / 2.0f, prevImageTextBounds.height / 2.0f);
+    prevImageButtonText.setPosition(prevImageButtonBounds.left + prevImageButtonBounds.width / 2.0f, prevImageButtonBounds.top + prevImageButtonBounds.height / 2.0f - verticalAdjustment);
 
     std::vector<sf::Text> buttonLabels;
     for (const auto& name : buttonNames) {
-        // Use TextWrapper class for wrapping text
         std::string wrappedText = TextWrapper::wrapText(name, 90, font, 8);
         sf::Text label(wrappedText, font, 15);
         label.setFillColor(sf::Color::Black);
         buttonLabels.push_back(label);
     }
     
-    std::vector<std::vector<sf::Texture>> textures(12);
+    std::vector<std::vector<std::unique_ptr<sf::Texture>>> textures(12);
     std::vector<std::vector<sf::Sprite>> images(12);
     
-    loadImagesFromTextFiles(textures, images, window);
+    loadImagesFromTextFilesRecursively(0, textures, images, window);
 
     size_t currentPage = 0;
     size_t totalPages = (buttonNames.size() + 4) / 5;
@@ -209,7 +224,6 @@ int main() {
             prevImageButton.getPosition().y + prevImageButton.getSize().y / 2 - prevImageButtonText.getLocalBounds().height / 2
         );
 
-        // Update button colors based on available images
         if (currentImageIndex == 0) {
             prevImageButton.setFillColor(inactiveButtonColor);
         } else {
@@ -221,6 +235,16 @@ int main() {
         } else {
             nextImageButton.setFillColor(sf::Color::Green);
         }
+
+        if (!images[currentButtonIndex].empty()) {
+            std::string pageNumberString = std::to_string(currentImageIndex + 1) + "/" + std::to_string(images[currentButtonIndex].size());
+            pageNumberText.setString(pageNumberString);
+
+            // Position the text at the top right. Adjust the offset as needed to fit your window size and layout
+            pageNumberText.setPosition(window.getSize().x - pageNumberText.getLocalBounds().width - 20, 20);
+        }
+
+
 
         window.clear();
         window.draw(sidebar);
@@ -245,8 +269,8 @@ int main() {
         window.draw(prevImageButton);
         window.draw(nextImageButtonText);
         window.draw(prevImageButtonText);
-
-        window.draw(title);
+        window.draw(pageNumberText);
+        //window.draw(title);
         window.display();
     }
 
