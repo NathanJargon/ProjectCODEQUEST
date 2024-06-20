@@ -6,6 +6,9 @@
 #include <memory>
 #include <sstream>
 
+// classes
+// OOP
+
 class TextWrapper {
 public:
     static std::string wrapText(const std::string& text, unsigned width, const sf::Font& font, unsigned characterSize, bool bold = false) {
@@ -37,37 +40,69 @@ public:
     }
 };
 
+// operator overloading
+
+struct RecursiveCallState {
+    int fileIndex;
+    size_t texturesSize;
+    size_t imagesSize;
+
+    RecursiveCallState(int fileIndex, size_t texturesSize, size_t imagesSize)
+        : fileIndex(fileIndex), texturesSize(texturesSize), imagesSize(imagesSize) {}
+};
+
+std::ostream& operator<<(std::ostream& os, const RecursiveCallState& state) {
+    os << "Recursive Call - File Index: " << state.fileIndex
+       << ", Textures Size: " << state.texturesSize
+       << ", Images Size: " << state.imagesSize;
+    return os;
+}
+
+// function
+// vector
+// recursion
+// input and output
+// if and loops
+// exception handling
+
 void loadImagesFromTextFilesRecursively(int fileIndex, std::vector<std::vector<std::unique_ptr<sf::Texture>>>& textures, std::vector<std::vector<sf::Sprite>>& images, sf::RenderWindow& window) {
-    if (fileIndex >= 12) return; 
+    try {
+        RecursiveCallState state(fileIndex, textures.size(), images.size());
+        std::cout << state << std::endl;
 
-    textures.resize(12);
-    images.resize(12);
+        if (fileIndex >= 12) return;
 
-    std::ifstream file("texts/text" + std::to_string(fileIndex) + ".txt");
-    if (!file) {
-        std::cerr << "Failed to open file: texts/text" << fileIndex << ".txt" << std::endl;
-        loadImagesFromTextFilesRecursively(fileIndex + 1, textures, images, window); 
-        return;
-    }
+        textures.resize(12);
+        images.resize(12);
 
-    std::string imageName;
-    while (std::getline(file, imageName)) {
-        auto texture = std::make_unique<sf::Texture>();
-        if (!texture->loadFromFile("images/" + imageName)) {
-            std::cerr << "Could not load image: " << imageName << std::endl;
-            continue;
+        std::ifstream file("texts/text" + std::to_string(fileIndex) + ".txt");
+        if (!file) {
+            throw std::runtime_error("Failed to open file: texts/text" + std::to_string(fileIndex) + ".txt");
         }
 
-        textures[fileIndex].push_back(std::move(texture));
+        std::string imageName;
+        while (std::getline(file, imageName)) {
+            auto texture = std::make_unique<sf::Texture>();
+            if (!texture->loadFromFile("images/" + imageName)) {
+                std::cerr << "Could not load image: " << imageName << std::endl;
+                continue;
+            }
 
-        sf::Sprite sprite(*textures[fileIndex].back());
-        sprite.setOrigin(sprite.getLocalBounds().width / 2, sprite.getLocalBounds().height / 2);
-        sprite.setPosition((window.getSize().x / 2) + 100, window.getSize().y / 2);
-        sprite.setScale(1.00f, 1.00f);
-        images[fileIndex].push_back(sprite);
+            std::cout << "Loading texture at address: " << texture.get() << std::endl;
+
+            textures[fileIndex].push_back(std::move(texture));
+
+            sf::Sprite sprite(*textures[fileIndex].back());
+            sprite.setOrigin(sprite.getLocalBounds().width / 2, sprite.getLocalBounds().height / 2);
+            sprite.setPosition((window.getSize().x / 2) + 100, window.getSize().y / 2);
+            sprite.setScale(1.00f, 1.00f);
+            images[fileIndex].push_back(sprite);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception caught: " << e.what() << std::endl;
     }
 
-    loadImagesFromTextFilesRecursively(fileIndex + 1, textures, images, window); 
+    loadImagesFromTextFilesRecursively(fileIndex + 1, textures, images, window);
 }
 
 int main() {
