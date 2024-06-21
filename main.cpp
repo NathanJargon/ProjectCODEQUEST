@@ -7,19 +7,23 @@
 #include <sstream>
 
 // classes
+// template
 // OOP
 
+template<typename CharType, typename StringType = std::basic_string<CharType>>
 class TextWrapper {
 public:
-    static std::string wrapText(const std::string& text, unsigned width, const sf::Font& font, unsigned characterSize, bool bold = false) {
+    static StringType wrapText(const StringType& text, unsigned width, const sf::Font& font, unsigned characterSize, bool bold = false) {
         unsigned currentLineLength = 0;
-        std::string wordsBuffer;
-        std::string wrappedText;
-        std::istringstream words(text);
-        std::string word;
+        StringType wordsBuffer;
+        StringType wrappedText;
+        std::basic_istringstream<CharType> words(text);
+        StringType word;
 
         while (words >> word) {
-            sf::Text line(wordsBuffer + " " + word, font, characterSize);
+            // Since sf::Text does not directly support std::wstring or other character types, we need to convert
+            // the StringType to a string if CharType is not char. This is a limitation of SFML.
+            sf::Text line(StringTypeToString(wordsBuffer + " " + word), font, characterSize);
             if (bold) {
                 line.setStyle(sf::Text::Bold);
             }
@@ -38,7 +42,14 @@ public:
 
         return wrappedText + wordsBuffer;
     }
-};
+
+    // Assuming you want to keep the StringTypeToString function simple and avoid template specialization for now:
+    private:
+        static std::string StringTypeToString(const StringType& text) {
+            // Directly convert assuming StringType can be iterated over and contains char-like elements
+            return std::string(text.begin(), text.end());
+        }
+    };
 
 // operator overloading
 
@@ -110,6 +121,7 @@ int main() {
     sf::Color defaultButtonColor = sf::Color::White;
     sf::Color activeButtonColor = sf::Color::Yellow;
     sf::Color inactiveButtonColor = sf::Color(128, 128, 128); 
+    TextWrapper<char, std::string> wrapper;
 
     sf::Font font;
     if (!font.loadFromFile("fonts/Montserrat Light.otf")) {
@@ -181,7 +193,7 @@ int main() {
 
     std::vector<sf::Text> buttonLabels;
     for (const auto& name : buttonNames) {
-        std::string wrappedText = TextWrapper::wrapText(name, 90, font, 8);
+        std::string wrappedText = wrapper.wrapText(name, 90, font, 8, false);
         sf::Text label(wrappedText, font, 15);
         label.setFillColor(sf::Color::Black);
         buttonLabels.push_back(label);
