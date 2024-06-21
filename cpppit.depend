@@ -1,10 +1,11 @@
 # depslib dependency file v1.0
-1718635999 source:c:\nash\projects folder\cpppit\main.cpp
+1718982879 source:c:\nash\projects folder\cpppit\main.cpp
 	<SFML/Graphics.hpp>
 	<SFML/Config.hpp>
 	<iostream>
 	<fstream>
 	<vector>
+	<memory>
 	<sstream>
 
 1699022364 c:\sfml-2.6.1\include\sfml\graphics.hpp

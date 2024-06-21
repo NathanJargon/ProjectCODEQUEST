@@ -118,14 +118,52 @@ void loadImagesFromTextFilesRecursively(int fileIndex, std::vector<std::vector<s
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1280, 720), "CodeQuest");
+
+    sf::Image icon;
+    if (icon.loadFromFile("images/logo.png")) { 
+        window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
+    }
+
     sf::Color defaultButtonColor = sf::Color::White;
     sf::Color activeButtonColor = sf::Color::Yellow;
     sf::Color inactiveButtonColor = sf::Color(128, 128, 128); 
     TextWrapper<char, std::string> wrapper;
 
+    sf::Clock clock;
+    float typewriterSpeed = 0.1f; 
+    std::string fullText = "Welcome to Codequest!";
+    std::string displayedText = "";
+    sf::Time lastUpdate = sf::Time::Zero;
+
     sf::Font font;
     if (!font.loadFromFile("fonts/Montserrat Light.otf")) {
         std::cerr << "Could not load font" << std::endl;
+    }
+
+    sf::Text loadingText("", font, 50);
+    loadingText.setPosition(360 - loadingText.getLocalBounds().width / 2, 360 - loadingText.getLocalBounds().height / 2); 
+
+    while (window.isOpen()) {
+        sf::Time elapsedTime = clock.getElapsedTime();
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+        if (elapsedTime - lastUpdate >= sf::seconds(typewriterSpeed) && displayedText.length() < fullText.length()) {
+            displayedText += fullText[displayedText.length()];
+            loadingText.setString(displayedText);
+            lastUpdate = elapsedTime;
+        }
+
+        window.clear();
+        window.draw(loadingText);
+        window.display();
+        
+        if (displayedText.length() == fullText.length()) {
+            break; 
+        }
     }
 
     sf::Text title("CodeQuest", font, 30);
