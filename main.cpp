@@ -1,10 +1,13 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Config.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <memory>
 #include <sstream>
+#include <memory>
+#include <vector>
+#include <string>
+#include <functional>
 
 // classes
 // template
@@ -50,6 +53,83 @@ public:
             return std::string(text.begin(), text.end());
         }
     };
+
+struct Button {
+    sf::RectangleShape shape;
+    sf::Text text;
+    bool isActive;
+
+    Button(const sf::Vector2f& position, const sf::Vector2f& size, const std::string& label, const sf::Font& font) {
+        shape.setPosition(position);
+        shape.setSize(size);
+        shape.setFillColor(sf::Color::Blue); // Example color
+
+        text.setFont(font);
+        text.setString(label);
+        text.setCharacterSize(20); // Example size
+        text.setFillColor(sf::Color::White);
+        text.setPosition(position.x + (size.x - text.getLocalBounds().width) / 2, position.y + (size.y - text.getLocalBounds().height) / 2);
+
+        isActive = true;
+    }
+
+    void draw(sf::RenderWindow& window) {
+        if (isActive) {
+            window.draw(shape);
+            window.draw(text);
+        }
+    }
+};
+
+struct InputBox {
+    sf::RectangleShape shape;
+    sf::Text text;
+    bool isActive;
+    sf::Clock inputClock; // Clock to track time since last input
+    std::function<void(const std::string&)> onSubmit; // Callback for submission
+
+    InputBox(const sf::Vector2f& position, const sf::Vector2f& size, const sf::Font& font, std::function<void(const std::string&)> onSubmitCallback = nullptr) :
+        onSubmit(onSubmitCallback) {
+        shape.setPosition(position);
+        shape.setSize(size);
+        shape.setFillColor(sf::Color::White);
+
+        text.setFont(font);
+        text.setCharacterSize(20);
+        text.setFillColor(sf::Color::Black);
+        text.setPosition(position.x + 5, position.y + 5); // Small padding
+
+        isActive = false;
+    }
+
+    void draw(sf::RenderWindow& window) {
+        if (isActive) {
+            window.draw(shape);
+            window.draw(text);
+        }
+    }
+
+    void handleInput(sf::Event event) {
+        if (isActive) {
+            if (event.type == sf::Event::TextEntered && inputClock.getElapsedTime().asMilliseconds() > 100) {
+                if (event.text.unicode == '\b' && !text.getString().isEmpty()) { // Handle backspace
+                    std::string currentText = text.getString();
+                    currentText.pop_back();
+                    text.setString(currentText);
+                } else if (event.text.unicode < 128) { // Ignore non-ASCII characters
+                    text.setString(text.getString() + static_cast<char>(event.text.unicode));
+                }
+                inputClock.restart(); // Restart the clock after handling input
+            }
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Return) {
+                if (onSubmit) {
+                    onSubmit(text.getString()); // Call the submission callback
+                    isActive = false; // Optionally deactivate
+                }
+            }
+        }
+    }
+};
 
 // operator overloading
 
@@ -116,21 +196,75 @@ void loadImagesFromTextFilesRecursively(int fileIndex, std::vector<std::vector<s
     loadImagesFromTextFilesRecursively(fileIndex + 1, textures, images, window);
 }
 
+
+// Function to reload images and textures
+void reloadImages(int fileIndex, std::vector<std::vector<std::unique_ptr<sf::Texture>>>& textures,
+                  std::vector<std::vector<sf::Sprite>>& images, sf::RenderWindow& window) {
+    textures.clear();
+    images.clear();
+    textures.resize(12);
+    images.resize(12);
+
+    for (int i = 0; i < 12; ++i) {
+        std::ifstream file("texts/text" + std::to_string(i) + ".txt");
+        if (!file) {
+            std::cerr << "Failed to open file: texts/text" + std::to_string(i) + ".txt" << std::endl;
+            continue;
+        }
+
+        std::string imageName;
+        while (std::getline(file, imageName)) {
+            auto texture = std::make_unique<sf::Texture>();
+            if (!texture->loadFromFile("images/" + imageName)) {
+                std::cerr << "Could not load image: " << imageName << std::endl;
+                continue;
+            }
+
+            textures[i].push_back(std::move(texture));
+            sf::Sprite sprite(*textures[i].back());
+            sprite.setOrigin(sprite.getLocalBounds().width / 2, sprite.getLocalBounds().height / 2);
+            sprite.setPosition((window.getSize().x / 2) + 100, window.getSize().y / 2);
+            sprite.setScale(1.00f, 1.00f);
+            images[i].push_back(sprite);
+        }
+    }
+}
+
+void addImageNameToTopic(int fileIndex, const std::string& imageName) {
+    std::string filePath = "texts/text" + std::to_string(fileIndex) + ".txt";
+
+    std::ofstream file(filePath, std::ios::app);
+    if (!file) {
+        std::cerr << "Failed to open file for appending: " << filePath << std::endl;
+        return;
+    }
+
+    // Append the imageName to the file
+    file << imageName << std::endl;
+
+    if (file.fail()) {
+        std::cerr << "Failed to write image name to file: " << filePath << std::endl;
+    } else {
+        std::cout << "Debug: Added image name '" << imageName << "' to file: " << filePath << std::endl;
+    }
+}
+
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(1280, 720), "CodeQuest");
 
     sf::Image icon;
-    if (icon.loadFromFile("images/logo.png")) { 
+    if (icon.loadFromFile("images/logo.png")) {
         window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
     }
 
     sf::Color defaultButtonColor = sf::Color::White;
     sf::Color activeButtonColor = sf::Color::Yellow;
-    sf::Color inactiveButtonColor = sf::Color(128, 128, 128); 
+    sf::Color inactiveButtonColor = sf::Color(128, 128, 128);
     TextWrapper<char, std::string> wrapper;
 
     sf::Clock clock;
-    float typewriterSpeed = 0.1f; 
+    float typewriterSpeed = 0.1f;
     std::string fullText = "Welcome to Codequest!";
     std::string displayedText = "";
     sf::Time lastUpdate = sf::Time::Zero;
@@ -138,12 +272,25 @@ int main() {
     sf::Font font;
     if (!font.loadFromFile("fonts/Montserrat Light.otf")) {
         std::cerr << "Could not load font" << std::endl;
+        return -1;
     }
 
-    sf::Text loadingText("", font, 50);
-    loadingText.setPosition(360 - loadingText.getLocalBounds().width / 2, 360 - loadingText.getLocalBounds().height / 2); 
+    std::vector<std::vector<std::unique_ptr<sf::Texture>>> textures(12);
+    std::vector<std::vector<sf::Sprite>> images(12);
 
-    while (window.isOpen()) {
+
+    Button myButton(sf::Vector2f(700, 645), sf::Vector2f(375, 50), "Add new image (e.g. image.png)", font);
+    InputBox myInputBox({715, 575}, {350, 50}, font, [&](const std::string& inputText) {
+        addImageNameToTopic(0, inputText);
+        reloadImages(0, textures, images, window); // Reload images after adding a new one
+        std::cout << "Submitted: " << inputText << std::endl;
+    });
+
+
+    sf::Text loadingText("", font, 50);
+    loadingText.setPosition(360 - loadingText.getLocalBounds().width / 2, 360 - loadingText.getLocalBounds().height / 2);
+
+    while (!window.isOpen()) { // remove ! once debugging is done
         sf::Time elapsedTime = clock.getElapsedTime();
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -160,9 +307,9 @@ int main() {
         window.clear();
         window.draw(loadingText);
         window.display();
-        
+
         if (displayedText.length() == fullText.length()) {
-            break; 
+            break;
         }
     }
 
@@ -187,37 +334,37 @@ int main() {
     };
 
     sf::Text pageNumberText;
-    pageNumberText.setFont(font); 
+    pageNumberText.setFont(font);
     pageNumberText.setCharacterSize(20);
-    pageNumberText.setFillColor(sf::Color::White); 
+    pageNumberText.setFillColor(sf::Color::White);
 
     sf::Text sidebarTitle("Lessons", font, 40);
     sidebarTitle.setPosition(25, 10);
     sidebarTitle.setFillColor(sf::Color::White);
-    
+
     sf::Text nextButtonText("Next", font, 25);
     sf::Text prevButtonText("Previous", font, 25);
-    
+
     sf::RectangleShape nextButton(sf::Vector2f(180, 70));
     nextButton.setPosition(10, 50 + 5 * 90);
     nextButton.setFillColor(sf::Color::Green);
-    
+
     sf::RectangleShape prevButton(sf::Vector2f(180, 70));
     prevButton.setPosition(10, 50 + 6 * 90);
     prevButton.setFillColor(sf::Color::Red);
-    
+
     sf::Text nextImageButtonText(">", font, 25);
     sf::Text prevImageButtonText("<", font, 25);
-    
+
     sf::RectangleShape nextImageButton(sf::Vector2f(50, 60));
     nextImageButton.setPosition(1200, 50 + 6.5 * 90);
-    nextImageButton.setFillColor(sf::Color::Green); 
-    
-    sf::RectangleShape prevImageButton(sf::Vector2f(50, 60));
-    prevImageButton.setPosition(1100, 50 + 6.5 * 90); 
-    prevImageButton.setFillColor(sf::Color::Red); 
+    nextImageButton.setFillColor(sf::Color::Green);
 
-    float verticalAdjustment = 20.0f; 
+    sf::RectangleShape prevImageButton(sf::Vector2f(50, 60));
+    prevImageButton.setPosition(1100, 50 + 6.5 * 90);
+    prevImageButton.setFillColor(sf::Color::Red);
+
+    float verticalAdjustment = 20.0f;
 
     sf::FloatRect nextImageButtonBounds = nextImageButton.getGlobalBounds();
     sf::FloatRect nextImageTextBounds = nextImageButtonText.getLocalBounds();
@@ -236,10 +383,7 @@ int main() {
         label.setFillColor(sf::Color::Black);
         buttonLabels.push_back(label);
     }
-    
-    std::vector<std::vector<std::unique_ptr<sf::Texture>>> textures(12);
-    std::vector<std::vector<sf::Sprite>> images(12);
-    
+
     loadImagesFromTextFilesRecursively(0, textures, images, window);
 
     size_t currentPage = 0;
@@ -256,12 +400,16 @@ int main() {
                 for (size_t i = 0; i < buttons.size(); ++i) {
                     if (buttons[i].getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
                         size_t index = currentPage * 5 + i;
-                        if (index < buttonNames.size()) { 
+                        if (index < buttonNames.size()) {
                             currentButtonIndex = index;
                             currentImageIndex = 0;
                             break;
                         }
                     }
+                }
+
+                if (myButton.shape.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
+                    myInputBox.isActive = !myInputBox.isActive; // Toggle input box active state
                 }
 
                 if (nextButton.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
@@ -278,6 +426,8 @@ int main() {
                     if (currentImageIndex > 0) currentImageIndex--;
                 }
             }
+
+            myInputBox.handleInput(event);
         }
 
         for (size_t i = 0; i < buttons.size(); ++i) {
@@ -355,6 +505,10 @@ int main() {
         window.draw(nextImageButtonText);
         window.draw(prevImageButtonText);
         window.draw(pageNumberText);
+        myInputBox.handleInput(event);
+        myButton.draw(window);
+        myInputBox.draw(window);
+
         //window.draw(title);
         window.display();
     }
