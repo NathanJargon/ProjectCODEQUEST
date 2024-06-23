@@ -111,15 +111,35 @@ void addImageNameToTopic(int fileIndex, const std::string& imageName) {
     }
 
     std::string filePath = "texts/text" + std::to_string(fileIndex) + ".txt";
-    std::ofstream file(filePath, std::ios::app);
+    std::ifstream file(filePath);
     if (!file) {
+        std::cerr << "Failed to open file for reading: " << filePath << std::endl;
+        return;
+    }
+
+    bool exists = false;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line == imageName) {
+            exists = true;
+            break;
+        }
+    }
+    file.close();
+
+    if (exists) {
+        std::cout << "Image name '" << imageName << "' already exists in file: " << filePath << std::endl;
+        return;
+    }
+
+    std::ofstream outFile(filePath, std::ios::app);
+    if (!outFile) {
         std::cerr << "Failed to open file for appending: " << filePath << std::endl;
         return;
     }
 
-    file << imageName << std::endl;
-
-    if (file.fail()) {
+    outFile << imageName << std::endl;
+    if (outFile.fail()) {
         std::cerr << "Failed to write image name to file: " << filePath << std::endl;
     } else {
         std::cout << "Debug: Added image name '" << imageName << "' to file: " << filePath << std::endl;
