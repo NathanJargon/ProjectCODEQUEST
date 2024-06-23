@@ -9,6 +9,10 @@
 #include <string>
 #include <functional>
 
+// note a: never input text if image does not exist in /images (done)
+// note b: add delete image button
+// note c: add toggle to hide or show the buttons below
+
 // classes
 // template
 // OOP
@@ -163,6 +167,8 @@ void loadImagesFromTextFilesRecursively(int fileIndex, std::vector<std::vector<s
 
         if (fileIndex >= 12) return;
 
+        std::cout << "Loading images from: texts/text" + std::to_string(fileIndex) + ".txt" << std::endl; 
+
         textures.resize(12);
         images.resize(12);
 
@@ -230,16 +236,26 @@ void reloadImages(int fileIndex, std::vector<std::vector<std::unique_ptr<sf::Tex
     }
 }
 
-void addImageNameToTopic(int fileIndex, const std::string& imageName) {
-    std::string filePath = "texts/text" + std::to_string(fileIndex) + ".txt";
+bool checkImageExists(const std::string& imageName) {
+    std::ifstream imgFile("images/" + imageName);
+    bool exists = imgFile.good();
+    imgFile.close();
+    return exists;
+}
 
+void addImageNameToTopic(int fileIndex, const std::string& imageName) {
+    if (!checkImageExists(imageName)) {
+        std::cerr << "Image does not exist, not adding to file: " << imageName << std::endl;
+        return;
+    }
+
+    std::string filePath = "texts/text" + std::to_string(fileIndex) + ".txt";
     std::ofstream file(filePath, std::ios::app);
     if (!file) {
         std::cerr << "Failed to open file for appending: " << filePath << std::endl;
         return;
     }
 
-    // Append the imageName to the file
     file << imageName << std::endl;
 
     if (file.fail()) {
@@ -249,6 +265,43 @@ void addImageNameToTopic(int fileIndex, const std::string& imageName) {
     }
 }
 
+void deleteImageNameFromTopic(int fileIndex, const std::string& imageName) {
+    std::string filePath = "texts/text" + std::to_string(fileIndex) + ".txt";
+    std::ifstream file(filePath);
+    if (!file) {
+        std::cerr << "Failed to open file for reading: " << filePath << std::endl;
+        return;
+    }
+
+    std::vector<std::string> lines;
+    std::string line;
+    bool found = false;
+    while (std::getline(file, line)) {
+        if (line != imageName) {
+            lines.push_back(line);
+        } else {
+            found = true;
+        }
+    }
+    file.close();
+
+    if (!found) {
+        std::cout << "Image name '" << imageName << "' not found in file: " << filePath << std::endl;
+        return;
+    }
+
+    std::ofstream outFile(filePath, std::ios::trunc);
+    if (!outFile) {
+        std::cerr << "Failed to open file for writing: " << filePath << std::endl;
+        return;
+    }
+
+    for (const auto& l : lines) {
+        outFile << l << std::endl;
+    }
+
+    std::cout << "Image name '" << imageName << "' has been deleted from file: " << filePath << std::endl;
+}
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1280, 720), "CodeQuest");
@@ -262,6 +315,7 @@ int main() {
     sf::Color activeButtonColor = sf::Color::Yellow;
     sf::Color inactiveButtonColor = sf::Color(128, 128, 128);
     TextWrapper<char, std::string> wrapper;
+    bool areButtonsVisible = true; 
 
     sf::Clock clock;
     float typewriterSpeed = 0.1f;
@@ -278,11 +332,17 @@ int main() {
     std::vector<std::vector<std::unique_ptr<sf::Texture>>> textures(12);
     std::vector<std::vector<sf::Sprite>> images(12);
 
-
-    Button myButton(sf::Vector2f(700, 645), sf::Vector2f(375, 50), "Add new image (e.g. image.png)", font);
+    Button myButton(sf::Vector2f(700, 645), sf::Vector2f(375, 50), "add image (e.g. image.png)", font);
     InputBox myInputBox({715, 575}, {350, 50}, font, [&](const std::string& inputText) {
         addImageNameToTopic(0, inputText);
-        reloadImages(0, textures, images, window); // Reload images after adding a new one
+        reloadImages(0, textures, images, window); 
+        std::cout << "Submitted: " << inputText << std::endl;
+    });
+
+    Button deleteButton(sf::Vector2f(300, 645), sf::Vector2f(375, 50), "delete image (e.g. image.png)", font);
+    InputBox deleteInputBox({315, 575}, {350, 50}, font, [&](const std::string& inputText) {
+        deleteImageNameFromTopic(0, inputText);
+        reloadImages(0, textures, images, window); 
         std::cout << "Submitted: " << inputText << std::endl;
     });
 
@@ -344,13 +404,14 @@ int main() {
 
     sf::Text nextButtonText("Next", font, 25);
     sf::Text prevButtonText("Previous", font, 25);
+    sf::Text toggleButtonText("Toggle", font, 25);
 
-    sf::RectangleShape nextButton(sf::Vector2f(180, 70));
+    sf::RectangleShape nextButton(sf::Vector2f(180, 50));
     nextButton.setPosition(10, 50 + 5 * 90);
     nextButton.setFillColor(sf::Color::Green);
 
-    sf::RectangleShape prevButton(sf::Vector2f(180, 70));
-    prevButton.setPosition(10, 50 + 6 * 90);
+    sf::RectangleShape prevButton(sf::Vector2f(180, 50));
+    prevButton.setPosition(10, 50 + 5.75 * 90);
     prevButton.setFillColor(sf::Color::Red);
 
     sf::Text nextImageButtonText(">", font, 25);
@@ -363,6 +424,10 @@ int main() {
     sf::RectangleShape prevImageButton(sf::Vector2f(50, 60));
     prevImageButton.setPosition(1100, 50 + 6.5 * 90);
     prevImageButton.setFillColor(sf::Color::Red);
+
+    sf::RectangleShape toggleVisibilityButton(sf::Vector2f(180, 50));
+    toggleVisibilityButton.setPosition(10, 50 + 6.5 * 90);
+    toggleVisibilityButton.setFillColor(sf::Color::Blue);
 
     float verticalAdjustment = 20.0f;
 
@@ -409,7 +474,17 @@ int main() {
                 }
 
                 if (myButton.shape.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
-                    myInputBox.isActive = !myInputBox.isActive; // Toggle input box active state
+                    myInputBox.isActive = !myInputBox.isActive; 
+                }
+
+                if (deleteButton.shape.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
+                    deleteInputBox.isActive = !deleteInputBox.isActive; 
+                }
+
+                if (event.type == sf::Event::MouseButtonPressed) {
+                    if (toggleVisibilityButton.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
+                        areButtonsVisible = !areButtonsVisible; 
+                    }
                 }
 
                 if (nextButton.getGlobalBounds().contains(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) {
@@ -428,6 +503,7 @@ int main() {
             }
 
             myInputBox.handleInput(event);
+            deleteInputBox.handleInput(event);
         }
 
         for (size_t i = 0; i < buttons.size(); ++i) {
@@ -447,6 +523,11 @@ int main() {
         prevButtonText.setPosition(
             prevButton.getPosition().x + prevButton.getSize().x / 2 - prevButtonText.getLocalBounds().width / 2,
             prevButton.getPosition().y + prevButton.getSize().y / 2 - prevButtonText.getLocalBounds().height / 2
+        );
+
+        toggleButtonText.setPosition(
+            toggleVisibilityButton.getPosition().x + toggleVisibilityButton.getSize().x / 2 - toggleButtonText.getLocalBounds().width / 2,
+            toggleVisibilityButton.getPosition().y + toggleVisibilityButton.getSize().y / 2 - toggleButtonText.getLocalBounds().height / 2
         );
 
         nextImageButtonText.setPosition(
@@ -480,7 +561,6 @@ int main() {
         }
 
 
-
         window.clear();
         window.draw(sidebar);
         window.draw(sidebarTitle);
@@ -500,14 +580,22 @@ int main() {
 
         window.draw(images[currentButtonIndex][currentImageIndex]);
 
-        window.draw(nextImageButton);
-        window.draw(prevImageButton);
-        window.draw(nextImageButtonText);
-        window.draw(prevImageButtonText);
         window.draw(pageNumberText);
-        myInputBox.handleInput(event);
-        myButton.draw(window);
-        myInputBox.draw(window);
+        window.draw(toggleVisibilityButton);
+        window.draw(toggleButtonText);
+
+
+        if (areButtonsVisible) {
+            window.draw(nextImageButton);
+            window.draw(prevImageButton);
+            window.draw(nextImageButtonText);
+            window.draw(prevImageButtonText);
+            myInputBox.draw(window);
+            deleteButton.draw(window);
+            myButton.draw(window); 
+            deleteInputBox.draw(window);
+        }
+
 
         //window.draw(title);
         window.display();
