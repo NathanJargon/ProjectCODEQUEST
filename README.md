@@ -4,6 +4,8 @@ Welcome to PROJECT SF::CODEQUEST! This application provides an interactive and u
 
 ![Screenshot of PROJECT SF::CODEQUEST](images/screenshot1.png "Screenshot of PROJECT SF::CODEQUEST")
 
+![Screenshot of PROJECT SF::CODEQUEST](./CodequestPIT.png "Screenshot of PROJECT SF::CODEQUEST")
+
 
 ## Features
 - Topic and Image Management: Create, edit, and delete topics and their associated images effortlessly.
