@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1719015261 source:c:\nash\projects folder\cpppit\main.cpp
+1719106558 source:c:\nash\projects folder\cpppit\main.cpp
 	<SFML/Graphics.hpp>
 	<SFML/Window.hpp>
 	<SFML/System.hpp>
@@ -10,6 +10,7 @@
 	<vector>
 	<string>
 	<functional>
+	"ImageFunctions.hpp"
 
 1699022364 c:\sfml-2.6.1\include\sfml\graphics.hpp
 	<SFML/Window.hpp>
@@ -850,4 +851,15 @@
 	<SFML/Graphics/PrimitiveType.hpp>
 	<SFML/Graphics/Drawable.hpp>
 	<SFML/Window/GlResource.hpp>
+
+1719106570 c:\nash\projects folder\cpppit\imagefunctions.hpp
+	<SFML/Graphics.hpp>
+	<vector>
+	<string>
+
+1719106572 source:c:\nash\projects folder\cpppit\imagefuntions.cpp
+	"ImageFunctions.hpp"
+	<fstream>
+	<iostream>
+	<memory>
 
