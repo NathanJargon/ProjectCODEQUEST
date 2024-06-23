@@ -319,7 +319,9 @@ int main() {
 
     sf::Clock clock;
     float typewriterSpeed = 0.1f;
-    std::string fullText = "Welcome to Codequest!";
+    const std::string texts[] = {"Welcome to Codequest!"};
+    const size_t textsSize = sizeof(texts) / sizeof(texts[0]); 
+    size_t currentTextIndex = 0; 
     std::string displayedText = "";
     sf::Time lastUpdate = sf::Time::Zero;
 
@@ -328,6 +330,7 @@ int main() {
         std::cerr << "Could not load font" << std::endl;
         return -1;
     }
+
 
     std::vector<std::vector<std::unique_ptr<sf::Texture>>> textures(12);
     std::vector<std::vector<sf::Sprite>> images(12);
@@ -350,7 +353,7 @@ int main() {
     sf::Text loadingText("", font, 50);
     loadingText.setPosition(360 - loadingText.getLocalBounds().width / 2, 360 - loadingText.getLocalBounds().height / 2);
 
-    while (!window.isOpen()) { // remove ! once debugging is done
+    while (window.isOpen() && currentTextIndex < textsSize) { 
         sf::Time elapsedTime = clock.getElapsedTime();
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -358,8 +361,8 @@ int main() {
                 window.close();
         }
 
-        if (elapsedTime - lastUpdate >= sf::seconds(typewriterSpeed) && displayedText.length() < fullText.length()) {
-            displayedText += fullText[displayedText.length()];
+        if (elapsedTime - lastUpdate >= sf::seconds(typewriterSpeed) && displayedText.length() < texts[currentTextIndex].length()) {
+            displayedText += texts[currentTextIndex][displayedText.length()];
             loadingText.setString(displayedText);
             lastUpdate = elapsedTime;
         }
@@ -368,8 +371,11 @@ int main() {
         window.draw(loadingText);
         window.display();
 
-        if (displayedText.length() == fullText.length()) {
-            break;
+        if (displayedText.length() == texts[currentTextIndex].length()) {
+            // Pause for a moment before moving to the next text
+            sf::sleep(sf::seconds(2)); 
+            currentTextIndex++; 
+            displayedText = ""; 
         }
     }
 
