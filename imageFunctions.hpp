@@ -8,8 +8,6 @@
 // template
 // OOP
 
-
-
 struct Button {
     sf::RectangleShape shape;
     sf::Text text;
