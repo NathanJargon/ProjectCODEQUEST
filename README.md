@@ -2,7 +2,7 @@
 
 Welcome to PROJECT SF::CODEQUEST! This application provides an interactive and user-friendly interface for managing and displaying images associated with various topics. Whether you're organizing a gallery, preparing a presentation, or simply need an efficient way to handle images and text, this program offers a robust set of features to make your tasks easier.
 
-![Screenshot of PROJECT SF::CODEQUEST](screenshot1.png "Screenshot of PROJECT SF::CODEQUEST")
+![Screenshot of PROJECT SF::CODEQUEST](images/screenshot1.png "Screenshot of PROJECT SF::CODEQUEST")
 
 
 ## Features
