@@ -1,1 +1,7 @@
-elementaryprogramming1.png
+loops1.png
+loops2.png
+loops3.png
+loops4.png
+loops5.png
+loops6.png
+loops7.png

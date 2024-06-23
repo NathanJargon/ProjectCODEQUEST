@@ -1,1 +1,8 @@
-elementaryprogramming1.png
+pointer1.png
+pointer2.png
+pointer3.png
+pointer4.png
+pointer5.png
+pointer6.png
+pointer7.png
+pointer8.png

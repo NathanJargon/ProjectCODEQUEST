@@ -1,1 +1,6 @@
-elementaryprogramming1.png
+arrays1.png
+arrays2.png
+arrays3.png
+arrays4.png
+arrays5.png
+arrays6.png

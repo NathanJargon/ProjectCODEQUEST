@@ -103,7 +103,7 @@ int main() {
         "Elementary Programming", "Functions", "Loops", "Arrays", "Object and Classes",
         "Object Oriented Programming", "Pointers and Dynamic Memory Management",
         "Templates, Vectors, and Stacks", "File Input and Output", "Operator Overloading",
-        "Exception Handling", "Recursion"
+        "Recursion", "Exception Handling"
     };
 
     sf::Text pageNumberText;

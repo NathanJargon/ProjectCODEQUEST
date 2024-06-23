@@ -51,6 +51,7 @@
 		<Linker>
 			<Add directory="C:/SFML/lib" />
 		</Linker>
+		<Unit filename="imageFuntions.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />

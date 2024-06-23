@@ -1,1 +1,6 @@
-elementaryprogramming1.png
+objectandclasses1.png
+objectandclasses2.png
+objectandclasses3.png
+objectandclasses4.png
+objectandclasses5.png
+objectandclasses6.png

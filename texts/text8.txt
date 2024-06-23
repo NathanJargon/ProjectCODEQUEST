@@ -1,1 +1,6 @@
-elementaryprogramming1.png
+fileio1.png
+fileio2.png
+fileio3.png
+fileio4.png
+fileio5.png
+fileio6.png
